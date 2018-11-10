@@ -146,3 +146,4 @@ Z2 = [[[0,0,0,0],
 			
 
 pieces = (BARRE,L1,L2,CARRE,Z,T,Z2)
+Names = [0,"BARRE","L1","L2","CARRE","Z","T","Z2"]

@@ -1,7 +1,9 @@
 import pygame
 from pygame.locals import *
 from tiles import *
-from random import randint
+import colors
+from random import randint, seed
+import math
 
 pygame.init()
 
@@ -19,22 +21,24 @@ grid = [[0 for h in range(WIDTHSCL)] for w in range(HEIGHTSCL)]
 
 SPEED_MUTLIPLICATOR = .25
 LEVEL = 1
-TILE_SPEED = 0.05
+TILE_SPEED = 0.04
 TileX = 4
 TileY = -2
 TileRotation = 0
 
 TileID = randint(0, len(pieces) - 1)
 CurrentTile = pieces[TileID][0]
+CurrentName = Names[TileID + 1]
 
+colors.SetUp(Names)
 
 GameEnded = False
 #FUNCTIONS
 def GetColor(h,w):
-	return (255,255,255) if grid[h][w] is 0 else (255,0,0)
+	return (255,255,255) if grid[h][w] is 0 else colors.GetColor(Names[grid[h][w] - 1])
 
 def GetTileColor(state):
-	return (255,255,255) if state is 0 else (255,0,0)
+	return (255,255,255) if state is 0 else colors.GetColor(CurrentName)
 
 
 def DrawGrid():
@@ -51,13 +55,13 @@ def IsOnGrid(h,w):
 
 def MovePiece(deltaTime):
 	global TileY
-	TileY += (TILE_SPEED * deltaTime + (SPEED_MUTLIPLICATOR * LEVEL)) / SCALE
+	TileY += (TILE_SPEED * deltaTime + (SPEED_MUTLIPLICATOR * math.floor(LEVEL))) / SCALE
 
 def DrawPiece():
 	for w in range(4):
 		for h in range(4):
 			if CurrentTile[h][w] is 1:
-				pygame.draw.rect(window, (255,0,0),
+				pygame.draw.rect(window, GetTileColor(CurrentTile[h][w]),
 								((TileX + w) * SCALE,int(TileY + h) * SCALE,
 								SCALE - 1, SCALE - 1))
 def CanMove(direction):
@@ -65,7 +69,7 @@ def CanMove(direction):
 		for h in range(4):
 			if CurrentTile[h][w] is 1:
 				if (not IsOnGrid(int(TileY), TileX + w + direction)
-					or grid[int(TileY) + h][TileX + w + direction] is 1):
+					or not grid[int(TileY) + h][TileX + w + direction] is 0):
 					return False
 	return True
 
@@ -87,20 +91,20 @@ def CheckEndGrid():
 	for h in range(3, -1, -1):
 		for w in range(4):
 			if CurrentTile[h][w] is 1:
-				if int(TileY) + h is 19 or grid[int(TileY) + h + 1][TileX + w] is 1:
-					print(h)
+				if math.ceil(TileY) + h is 21 or (not grid[math.ceil(TileY) + h - 1][TileX + w] is 0):
 					AddPieceToGrid()
 					CheckLine()
 					return
 
 def AddPieceToGrid():
 	global grid, TileY, TileX
+	TileY -= 1
 	for w in range(4):
 		for h in range(4):
 			if CurrentTile[h][w] is 1:
-					grid[int(TileY) + h][TileX + w] = 1
+					grid[int(TileY) + h][TileX + w] = TileID + 1
 
-	if int(TileY) <= -1:
+	if math.floor(TileY) <= 0:
 		EndGame()
 	else:
 		NewPiece()
@@ -112,10 +116,11 @@ def CheckLine():
 		sum = 0
 
 		for w in range(WIDTHSCL):
-			sum += grid[h][w]
+			if grid[h][w] is not 0:
+				sum += 1
 
 		if sum == 10:
-			LEVEL += 1
+			LEVEL += 0.1
 			for w in range(WIDTHSCL):
 				for H in range(h, 0, -1):
 					grid[H][w] = grid[H - 1][w]
@@ -123,12 +128,14 @@ def CheckLine():
 			CheckLine()
 
 def NewPiece():
-	global CurrentTile, TileY, TileX, TileRotation, TileID
+	global CurrentTile, TileY, TileX, TileRotation, TileID, CurrentName
+	seed(TileX + TileY + TileID)
 	TileID = randint(0, len(pieces) - 1)
 	CurrentTile = pieces[TileID][0]
+	CurrentName = Names[TileID]
 	TileRotation = 0
 	TileX = 4
-	TileY = -2
+	TileY = -1
 
 #CHECK IF THE PIECE IS HIGHER THAN THE GRID AND END THE GAME
 def EndGame():
@@ -161,8 +168,7 @@ while True:
 		DrawGrid()
 
 		MovePiece(deltaTime)
-		DrawPiece()
-
 		CheckEndGrid()
+		DrawPiece()
 
 	pygame.display.update()
